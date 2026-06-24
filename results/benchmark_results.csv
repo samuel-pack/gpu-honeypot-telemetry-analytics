@@ -2,3 +2,7 @@ records,method,input_file,file_size_mb,parse_ms,analysis_ms,total_ms,records_per
 10000,cpu_pandas,data\synthetic\synthetic_cowrie_10k.jsonl,2.011368751525879,127.2211999994397,30.801799999608193,158.024899999873,63281.16644913577,bucket_minutes=5; min_attempts=20
 1000000,cpu_pandas,data\synthetic\synthetic_cowrie_1m.jsonl,204.28633880615234,10309.562999999798,2823.8832999995793,13133.448500000668,76141.46429248565,bucket_minutes=5; min_attempts=100
 1000000,cpu_pandas,data\synthetic\synthetic_cowrie_1m.jsonl,204.95267009735107,10445.959699999548,2653.7467999996807,13099.70819999944,76337.57826758634,bucket_minutes=5; min_attempts=100
+10000,cpu_pandas,data/synthetic/synthetic_cowrie_10k.jsonl,2.0172014236450195,42.106785000214586,5.292829999234527,47.40049499923771,210968.26098885294,bucket_minutes=5; min_attempts=20
+1000000,cpu_pandas,data/synthetic/synthetic_cowrie_1m.jsonl,204.95267009735107,3660.385313000006,195.58320800024376,3855.969913000081,259338.12310842556,bucket_minutes=5; min_attempts=100
+10000,gpu_cudf,data/synthetic/synthetic_cowrie_10k.jsonl,2.0172014236450195,2620.538036999278,52.480553998975665,2673.0226230010885,3741.083189476593,bucket_minutes=5; min_attempts=20; parse/load includes cuDF JSON ingestion overhead
+1000000,gpu_cudf,data/synthetic/synthetic_cowrie_1m.jsonl,204.95267009735107,1097.841683000297,177.53639299917268,1275.3824760002317,784078.5166941704,bucket_minutes=5; min_attempts=100; parse/load includes cuDF JSON ingestion overhead

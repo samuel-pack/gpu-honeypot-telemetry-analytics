@@ -109,7 +109,7 @@ def normalize_frame(df, bucket_minutes: int):
     if "timestamp" not in df.columns:
         raise ValueError("Input file does not contain a timestamp column")
 
-    df["timestamp"] = cudf.to_datetime(df["timestamp"], errors="coerce")
+    df["timestamp"] = cudf.to_datetime(df["timestamp"])
     df = df.dropna(subset=["timestamp"])
 
     df["username"] = ensure_string_column(df, "username")
@@ -117,7 +117,9 @@ def normalize_frame(df, bucket_minutes: int):
     df["src_ip"] = ensure_string_column(df, "src_ip")
     df["eventid"] = ensure_string_column(df, "eventid")
     df["protocol"] = ensure_string_column(df, "protocol")
-    df["time_bucket"] = df["timestamp"].dt.floor(f"{bucket_minutes}min")
+    bucket_ns = bucket_minutes * 60 * 1_000_000_000
+    timestamp_ns = df["timestamp"].astype("int64")
+    df["time_bucket"] = ((timestamp_ns // bucket_ns) * bucket_ns).astype("datetime64[ns]")
     df["credential_pair"] = df["username"] + ":" + df["password"]
 
     sync_gpu()
