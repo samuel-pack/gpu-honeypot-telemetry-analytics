@@ -17,6 +17,8 @@ The prototype compares CPU/Pandas and GPU/RAPIDS cuDF analytics pipelines on syn
 
 This project is not an official DShield component and does not claim to represent DShield’s production workload. It is a possible complementary processing path for Cowrie/DShield-style telemetry: keep raw logs local, generate safe benchmark data, and evaluate whether NVIDIA hardware and software can make large-scale analysis faster.
 
+![CPU vs GPU runtime crossover](docs/images/cpu_gpu_crossover.svg)
+
 ## What This Demonstrates
 
 This project demonstrates an end-to-end accelerated-computing evaluation:
