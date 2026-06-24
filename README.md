@@ -4,7 +4,7 @@ _A benchmark prototype for accelerating Cowrie-style SSH honeypot telemetry anal
 
 ## Overview
 
-This project evaluates whether NVIDIA accelerated computing can improve the processing of high-volume honeypot telemetry. The workload focuses on SSH brute-force login activity collected by Cowrie and similar to data submitted to the SANS Internet Storm Center DShield project.
+This project evaluates whether NVIDIA accelerated computing can improve the processing of high-volume honeypot telemetry. The workload focuses on SSH brute-force login activity collected by Cowrie and similar data submitted to the SANS Internet Storm Center DShield project.
 
 The prototype compares CPU/Pandas and GPU/RAPIDS cuDF analytics pipelines on synthetic Cowrie-style datasets up to 10 million records. It measures ingestion, normalization, aggregation, and end-to-end throughput for common telemetry questions:
 
