@@ -4,7 +4,7 @@ _A benchmark prototype for accelerating Cowrie-style SSH honeypot telemetry anal
 
 ## Overview
 
-This project evaluates whether NVIDIA accelerated computing can improve the processing of high-volume honeypot telemetry, with a focus on SSH brute-force login activity collected by Cowrie and similar data submitted to the SANS Internet Storm Center DShield project.
+This project evaluates whether NVIDIA accelerated computing can improve the processing of high-volume honeypot telemetry. The workload focuses on SSH brute-force login activity collected by Cowrie and similar to data submitted to the SANS Internet Storm Center DShield project.
 
 The prototype compares CPU/Pandas and GPU/RAPIDS cuDF analytics pipelines on synthetic Cowrie-style datasets up to 10 million records. It measures ingestion, normalization, aggregation, and end-to-end throughput for common telemetry questions:
 
@@ -15,20 +15,49 @@ The prototype compares CPU/Pandas and GPU/RAPIDS cuDF analytics pipelines on syn
 - How does activity change across time buckets?
 - Where does GPU acceleration help, and where do parsing or normalization costs still dominate?
 
-The project is not an official DShield component and does not claim to represent DShield’s production workload. It is a possible complementary processing path for Cowrie/DShield-style telemetry: keep raw logs local, generate safe benchmark data, and evaluate whether NVIDIA hardware and software can make large-scale analysis faster.
+This project is not an official DShield component and does not claim to represent DShield’s production workload. It is a possible complementary processing path for Cowrie/DShield-style telemetry: keep raw logs local, generate safe benchmark data, and evaluate whether NVIDIA hardware and software can make large-scale analysis faster.
+
+## What This Demonstrates
+
+This project demonstrates an end-to-end accelerated-computing evaluation:
+
+- define a realistic telemetry workload
+- build CPU and GPU implementations
+- benchmark scaling behavior across 10K, 1M, and 10M records
+- separate ingestion time from analytics runtime
+- identify where GPU acceleration improves throughput
+- document the limits of the prototype honestly
+
+The goal is not simply to show that a GPU is faster. The goal is to measure when GPU acceleration becomes useful and which parts of the pipeline still constrain performance.
+
+## Processing Pipeline
+
+```text
+Cowrie JSONL logs
+      |
+      v
+Sanitized local sample
+      |
+      v
+Synthetic benchmark generation
+      |
+      v
++-------------------------+      +----------------------------+
+| CPU/Pandas baseline     |      | GPU/RAPIDS cuDF baseline   |
+| JSONL -> Pandas -> agg  |      | JSONL -> cuDF -> agg       |
++-------------------------+      +----------------------------+
+      |                                      |
+      v                                      v
+Benchmark summaries, throughput comparison, bottleneck analysis
+```
 
 ## Why This Might Help
 
 Cowrie logs are easy to collect, but repeated analysis becomes expensive as telemetry grows. A local DShield or Cowrie operator may want to summarize large JSONL log files without uploading raw data elsewhere.
 
-This project tests whether GPU-accelerated analytics can improve that workflow by using:
+This project treats Cowrie/DShield-style telemetry as a customer workload: a local operator has high-volume honeypot logs and wants faster summarization while keeping raw telemetry under local control.
 
-- NVIDIA DGX Spark as the local benchmark platform
-- RAPIDS/cuDF for GPU dataframe processing
-- CPU/Pandas as the baseline
-- synthetic, non-attributable telemetry for repeatable testing
-
-The benchmark is not just “CPU versus GPU.” It separates:
+The benchmark separates:
 
 - JSON parse/load time
 - field normalization
@@ -92,6 +121,65 @@ Large generated datasets are not committed to the repository.
 
 The GPU path currently targets NVIDIA DGX Spark with CUDA 13 and RAPIDS/cuDF 26.06.
 
+## Reproducing the DGX Spark Benchmark
+
+Create the CPU/Pandas environment:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+Create the RAPIDS/cuDF environment:
+
+```bash
+conda env create -f environment-rapids-cuda13.yml
+conda activate rapids-cuda13
+```
+
+Generate the 10M synthetic dataset:
+
+```bash
+python scripts/generate_synthetic_cowrie.py \
+  --input data/real/cowrie_sanitized.jsonl \
+  --output data/synthetic/synthetic_cowrie_10m.jsonl \
+  --records 10000000 \
+  --seed 20260623 \
+  --profile failed-heavy \
+  --days 7 \
+  --start 2026-06-22T11:50:00Z \
+  --src-ip-mode private-diverse \
+  --exclude-values claude,openclaw,nvidia,grok,cursor
+```
+
+Run the CPU baseline:
+
+```bash
+source .venv/bin/activate
+
+python scripts/run_cpu_pandas.py \
+  --input data/synthetic/synthetic_cowrie_10m.jsonl \
+  --bucket-minutes 5 \
+  --min-attempts 1000 \
+  --output results/dgx_cpu_pandas_10m_summary.md \
+  --benchmark-csv results/benchmark_results.csv
+```
+
+Run the GPU baseline:
+
+```bash
+conda activate rapids-cuda13
+
+python scripts/run_gpu_cudf.py \
+  --input data/synthetic/synthetic_cowrie_10m.jsonl \
+  --bucket-minutes 5 \
+  --min-attempts 1000 \
+  --output results/dgx_gpu_cudf_10m_summary.md \
+  --benchmark-csv results/benchmark_results.csv
+```
+
 ## Benchmark Results
 
 Benchmark platform: NVIDIA DGX Spark  
@@ -117,7 +205,7 @@ At 10M records, GPU/cuDF processes roughly 2.02 million records per second and i
 
 The largest improvement occurs in parse/load and dataframe construction. Aggregation also improves, but by a smaller margin. This suggests that GPU acceleration becomes more useful as telemetry volume grows, while pipeline design still needs to account for ingestion and normalization bottlenecks.
 
-## Current Repository Layout
+## Repository Layout
 
 ```text
 scripts/
