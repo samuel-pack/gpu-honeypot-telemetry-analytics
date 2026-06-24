@@ -1,34 +1,33 @@
 # GPU-Accelerated Honeypot Telemetry Analytics
 
-_A benchmark prototype for accelerating Cowrie-style SSH honeypot telemetry analysis with NVIDIA RAPIDS/cuDF and DGX Spark._
+_A DGX Spark benchmark comparing CPU/Pandas and NVIDIA RAPIDS/cuDF for high-volume Cowrie-style honeypot telemetry._
 
-## Overview
+## Key Result
 
-This project evaluates whether NVIDIA accelerated computing can improve the processing of high-volume honeypot telemetry. The workload focuses on SSH brute-force login activity collected by Cowrie and similar data submitted to the SANS Internet Storm Center DShield project.
+This project benchmarks CPU and GPU analytics pipelines for Cowrie-style SSH honeypot telemetry. On a 10 million record synthetic dataset, NVIDIA RAPIDS/cuDF on DGX Spark reached about **2.02 million records/sec**, compared with about **269K records/sec** for the CPU/Pandas baseline.
 
-The prototype compares CPU/Pandas and GPU/RAPIDS cuDF analytics pipelines on synthetic Cowrie-style datasets up to 10 million records. It measures ingestion, normalization, aggregation, and end-to-end throughput for common telemetry questions:
+At 10M records, the GPU pipeline delivered about **7.5x higher end-to-end throughput**.
 
-- What usernames are being targeted?
-- What passwords are being attempted?
-- Which credential pairs appear most often?
-- Which source actors generate the most activity?
-- How does activity change across time buckets?
-- Where does GPU acceleration help, and where do parsing or normalization costs still dominate?
-
-This project is not an official DShield component and does not claim to represent DShield’s production workload. It is a possible complementary processing path for Cowrie/DShield-style telemetry: keep raw logs local, generate safe benchmark data, and evaluate whether NVIDIA hardware and software can make large-scale analysis faster.
+| Dataset | CPU/Pandas Total | GPU/cuDF Total | Result |
+|---:|---:|---:|---|
+| 10K | 47.40 ms | 2,673.02 ms | CPU faster; GPU overhead dominates |
+| 1M | 3,855.97 ms | 1,275.38 ms | GPU/cuDF ~3.0x faster |
+| 10M | 37,099.22 ms | 4,949.73 ms | GPU/cuDF ~7.5x faster |
 
 ![CPU vs GPU runtime crossover](docs/images/cpu_gpu_crossover.svg)
+
+The benchmark shows a clear crossover point: CPU/Pandas is faster at small scale, but GPU/cuDF becomes significantly faster as telemetry volume grows.
 
 ## What This Demonstrates
 
 This project demonstrates an end-to-end accelerated-computing evaluation:
 
 - define a realistic telemetry workload
-- build CPU and GPU implementations
+- build comparable CPU and GPU implementations
 - benchmark scaling behavior across 10K, 1M, and 10M records
 - separate ingestion time from analytics runtime
 - identify where GPU acceleration improves throughput
-- document the limits of the prototype honestly
+- document limitations and future optimization paths
 
 The goal is not simply to show that a GPU is faster. The goal is to measure when GPU acceleration becomes useful and which parts of the pipeline still constrain performance.
 
@@ -59,69 +58,58 @@ Cowrie logs are easy to collect, but repeated analysis becomes expensive as tele
 
 This project treats Cowrie/DShield-style telemetry as a customer workload: a local operator has high-volume honeypot logs and wants faster summarization while keeping raw telemetry under local control.
 
-The benchmark separates:
+The benchmark separates JSON parse/load time, field normalization, aggregation runtime, and end-to-end throughput. That distinction matters because a GPU can only accelerate the parts of the pipeline that are actually moved into GPU-friendly processing.
 
-- JSON parse/load time
-- field normalization
-- aggregation runtime
-- end-to-end throughput
+## Real Data and Synthetic Scaling
 
-That distinction matters because a GPU can only accelerate the parts of the pipeline that are actually moved into GPU-friendly processing.
+This project uses a sanitized local Cowrie sample to validate field structure, parsing behavior, and the analytics workflow. The large benchmark datasets are synthetic because the goal is repeatable performance testing at controlled scales, not threat attribution.
 
-## Data Model and Privacy
+The synthetic data preserves benchmark-relevant structure such as timestamps, event IDs, usernames, passwords, source actors, credential pairs, and bursty activity patterns. It should not be used to draw conclusions about real attacker behavior or Internet-wide credential trends.
 
-The project uses a sanitized local Cowrie sample to generate synthetic benchmark datasets. Real public source IPs are not preserved in synthetic output. Synthetic source actors are generated from private address ranges so the data can model source skew and repeated activity without attributing behavior to real Internet hosts.
+A future version could run the same local analyzer against larger real Cowrie or DShield datasets if available.
 
-The generated records preserve benchmark-relevant fields such as:
+## Benchmark Results
 
-- timestamp
-- event ID
-- username
-- password
-- source actor
-- destination port
-- protocol
-- credential pair
+Benchmark platform: NVIDIA DGX Spark  
+Largest dataset: 10,000,000 synthetic Cowrie-style SSH login records  
+Largest file size: 2,052.94 MB
 
-The synthetic datasets are intended for performance testing, not threat attribution.
+| Dataset | Method | Parse/Load | Analysis | Total | Throughput |
+|---:|---|---:|---:|---:|---:|
+| 10K | CPU/Pandas | 42.11 ms | 5.29 ms | 47.40 ms | 210,968 records/sec |
+| 10K | GPU/cuDF | 2,620.54 ms | 52.48 ms | 2,673.02 ms | 3,741 records/sec |
+| 1M | CPU/Pandas | 3,660.39 ms | 195.58 ms | 3,855.97 ms | 259,338 records/sec |
+| 1M | GPU/cuDF | 1,097.84 ms | 177.54 ms | 1,275.38 ms | 784,079 records/sec |
+| 10M | CPU/Pandas | 35,018.04 ms | 2,081.18 ms | 37,099.22 ms | 269,547 records/sec |
+| 10M | GPU/cuDF | 3,544.57 ms | 1,405.16 ms | 4,949.73 ms | 2,020,311 records/sec |
 
-## Synthetic Data Generation
+## Findings
 
-Synthetic datasets are generated with:
+At 10K records, CPU/Pandas is faster because GPU initialization, JSON parsing, and dataframe setup overhead dominate the workload.
 
-```bash
-python scripts/generate_synthetic_cowrie.py \
-  --input data/real/cowrie_sanitized.jsonl \
-  --output data/synthetic/synthetic_cowrie_10m.jsonl \
-  --records 10000000 \
-  --seed 20260623 \
-  --profile failed-heavy \
-  --days 7 \
-  --start 2026-06-22T11:50:00Z \
-  --src-ip-mode private-diverse \
-  --exclude-values claude,openclaw,nvidia,grok,cursor
-```
+At 1M records, GPU/cuDF provides a clear throughput advantage.
 
-Large generated datasets are not committed to the repository.
+At 10M records, GPU/cuDF processes roughly 2.02 million records per second and improves end-to-end throughput by about 7.5x over the CPU/Pandas baseline.
 
-## CPU Baseline
+The largest improvement occurs in parse/load and dataframe construction. Aggregation also improves, but by a smaller margin. This suggests that GPU acceleration becomes more useful as telemetry volume grows, while pipeline design still needs to account for ingestion and normalization bottlenecks.
 
-`scripts/run_cpu_pandas.py` implements the CPU/Pandas baseline. It reads JSONL telemetry, normalizes fields, and computes:
+## Custom CUDA Projection
 
-- event ID counts
-- top usernames
-- top passwords
-- top source IPs
-- top credential pairs
-- time-bucket counts
-- per-source-IP aggregates
-- suspicious high-volume source actors
+A custom CUDA/C++ kernel is a possible future optimization path, but the current 10M benchmark suggests that aggregation alone is not the dominant bottleneck.
 
-## GPU Baseline
+In the 10M GPU/cuDF run:
 
-`scripts/run_gpu_cudf.py` implements the RAPIDS/cuDF GPU baseline. It mirrors the CPU analytics path as closely as practical while using GPU dataframe operations for ingestion, normalization, and aggregation.
+| Stage | Time |
+|---|---:|
+| Parse/load | 3,544.57 ms |
+| Analysis | 1,405.16 ms |
+| Total | 4,949.73 ms |
 
-The GPU path currently targets NVIDIA DGX Spark with CUDA 13 and RAPIDS/cuDF 26.06.
+Even if a custom CUDA kernel eliminated the analysis stage entirely, total runtime would only fall from about 4.95 seconds to about 3.54 seconds. That is a theoretical maximum improvement of roughly 28%.
+
+A larger end-to-end improvement would likely require changing the input path, such as using Parquet or compact binary columns instead of raw JSONL.
+
+See `docs/custom_cuda_projection.md` for more detail.
 
 ## Reproducing the DGX Spark Benchmark
 
@@ -182,31 +170,6 @@ python scripts/run_gpu_cudf.py \
   --benchmark-csv results/benchmark_results.csv
 ```
 
-## Benchmark Results
-
-Benchmark platform: NVIDIA DGX Spark  
-Largest dataset: 10,000,000 synthetic Cowrie-style SSH login records  
-Largest file size: 2,052.94 MB
-
-| Dataset | Method | Parse/Load | Analysis | Total | Throughput |
-|---:|---|---:|---:|---:|---:|
-| 10K | CPU/Pandas | 42.11 ms | 5.29 ms | 47.40 ms | 210,968 records/sec |
-| 10K | GPU/cuDF | 2,620.54 ms | 52.48 ms | 2,673.02 ms | 3,741 records/sec |
-| 1M | CPU/Pandas | 3,660.39 ms | 195.58 ms | 3,855.97 ms | 259,338 records/sec |
-| 1M | GPU/cuDF | 1,097.84 ms | 177.54 ms | 1,275.38 ms | 784,079 records/sec |
-| 10M | CPU/Pandas | 35,018.04 ms | 2,081.18 ms | 37,099.22 ms | 269,547 records/sec |
-| 10M | GPU/cuDF | 3,544.57 ms | 1,405.16 ms | 4,949.73 ms | 2,020,311 records/sec |
-
-## Findings
-
-At 10K records, CPU/Pandas is faster because GPU initialization, JSON parsing, and dataframe setup overhead dominate the workload.
-
-At 1M records, GPU/cuDF provides a clear throughput advantage.
-
-At 10M records, GPU/cuDF processes roughly 2.02 million records per second and improves end-to-end throughput by about 7.5x over the CPU/Pandas baseline.
-
-The largest improvement occurs in parse/load and dataframe construction. Aggregation also improves, but by a smaller margin. This suggests that GPU acceleration becomes more useful as telemetry volume grows, while pipeline design still needs to account for ingestion and normalization bottlenecks.
-
 ## Repository Layout
 
 ```text
@@ -219,6 +182,7 @@ docs/
   methodology.md
   data_fidelity_and_sanitization.md
   limitations.md
+  custom_cuda_projection.md
   dgx_spark_benchmark_summary.md
 
 data/
@@ -248,7 +212,7 @@ The synthetic data is useful for repeatable performance testing, but it should n
 ## Roadmap
 
 - Add a normalized intermediate representation for GPU-friendly processing.
-- Implement a custom CUDA/C++ frequency-analysis kernel.
+- Benchmark Parquet or compact binary input against raw JSONL.
+- Implement a custom CUDA/C++ frequency-analysis kernel only if profiling supports it.
 - Compare CPU/Pandas, RAPIDS/cuDF, and custom CUDA paths.
 - Package a local analyzer that Cowrie/DShield users could run against their own logs.
-- Expand benchmark documentation with hardware, software, and scaling notes.
