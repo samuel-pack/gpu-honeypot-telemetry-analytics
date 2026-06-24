@@ -1,0 +1,7 @@
+dataset,method,records,file_size_mb,parse_load_ms,analysis_ms,total_ms,records_per_second,notes
+10K,CPU/Pandas,10000,2.02,42.11,5.29,47.40,210968.26,DGX Spark CPU baseline
+10K,GPU/RAPIDS cuDF,10000,2.02,2620.54,52.48,2673.02,3741.08,DGX Spark GPU baseline; overhead dominates small input
+1M,CPU/Pandas,1000000,204.95,3660.39,195.58,3855.97,259338.12,DGX Spark CPU baseline
+1M,GPU/RAPIDS cuDF,1000000,204.95,1097.84,177.54,1275.38,784078.52,DGX Spark GPU baseline; crossover achieved
+10M,CPU/Pandas,10000000,2052.94,35018.04,2081.18,37099.22,269547.41,DGX Spark CPU baseline
+10M,GPU/RAPIDS cuDF,10000000,2052.94,3544.57,1405.16,4949.73,2020310.96,DGX Spark GPU baseline; 7.5x end-to-end throughput improvement
