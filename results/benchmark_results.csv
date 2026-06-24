@@ -6,3 +6,5 @@ records,method,input_file,file_size_mb,parse_ms,analysis_ms,total_ms,records_per
 1000000,cpu_pandas,data/synthetic/synthetic_cowrie_1m.jsonl,204.95267009735107,3660.385313000006,195.58320800024376,3855.969913000081,259338.12310842556,bucket_minutes=5; min_attempts=100
 10000,gpu_cudf,data/synthetic/synthetic_cowrie_10k.jsonl,2.0172014236450195,2620.538036999278,52.480553998975665,2673.0226230010885,3741.083189476593,bucket_minutes=5; min_attempts=20; parse/load includes cuDF JSON ingestion overhead
 1000000,gpu_cudf,data/synthetic/synthetic_cowrie_1m.jsonl,204.95267009735107,1097.841683000297,177.53639299917268,1275.3824760002317,784078.5166941704,bucket_minutes=5; min_attempts=100; parse/load includes cuDF JSON ingestion overhead
+10000000,cpu_pandas,data/synthetic/synthetic_cowrie_10m.jsonl,2052.9372663497925,35018.040158000076,2081.1833049992856,37099.22477500004,269547.41131784173,bucket_minutes=5; min_attempts=1000
+10000000,gpu_cudf,data/synthetic/synthetic_cowrie_10m.jsonl,2052.9372663497925,3544.56876400036,1405.1586409987067,4949.733084999025,2020310.9598589537,bucket_minutes=5; min_attempts=1000; parse/load includes cuDF JSON ingestion overhead
