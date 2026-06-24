@@ -1,0 +1,12 @@
+name: rapids-cuda13
+channels:
+  - rapidsai
+  - conda-forge
+  - nvidia
+dependencies:
+  - python=3.12
+  - cudf=26.06
+  - cuda-version=13.0
+  - pandas
+  - numpy
+  - pyarrow
