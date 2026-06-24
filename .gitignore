@@ -54,3 +54,4 @@ Thumbs.db
 # Legacy scratch scripts
 cowrie_cuda_bench.py
 cowrie_synth.pycufile.log
+cufile.log
