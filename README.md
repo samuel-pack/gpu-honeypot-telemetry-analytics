@@ -14,7 +14,7 @@ At 10M records, the GPU pipeline delivered about **7.5x higher end-to-end throug
 | 1M | 3,855.97 ms | 1,275.38 ms | GPU/cuDF ~3.0x faster |
 | 10M | 37,099.22 ms | 4,949.73 ms | GPU/cuDF ~7.5x faster |
 
-![CPU vs GPU runtime crossover](docs/images/cpu_gpu_crossover.svg)
+![CPU vs GPU runtime crossover](docs/images/cpu_gpu_crossover_clean.svg)
 
 The benchmark shows a clear crossover point: CPU/Pandas is faster at small scale, but GPU/cuDF becomes significantly faster as telemetry volume grows.
 
