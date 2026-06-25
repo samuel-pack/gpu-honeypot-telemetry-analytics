@@ -36,9 +36,10 @@
   <text x="28" y="250" transform="rotate(-90 28,250)" text-anchor="middle" font-size="18">Total runtime, ms log scale</text>
   <text x="450" y="492" text-anchor="middle" font-size="18">Dataset size</text>
 
-  <rect x="615" y="68" width="230" height="70" fill="white" stroke="#d0d7de"/>
-  <line x1="635" y1="94" x2="685" y2="94" stroke="#0969da" stroke-width="4"/>
-  <text x="695" y="100" font-size="16">CPU/Pandas</text>
-  <line x1="635" y1="121" x2="685" y2="121" stroke="#cf222e" stroke-width="4"/>
-  <text x="695" y="127" font-size="16">GPU/RAPIDS cuDF</text>
+  <!-- Legend moved below plot lines to avoid obscuring the data -->
+  <rect x="585" y="315" width="245" height="70" fill="white" stroke="#d0d7de"/>
+  <line x1="610" y1="341" x2="660" y2="341" stroke="#0969da" stroke-width="4"/>
+  <text x="675" y="347" font-size="16">CPU/Pandas</text>
+  <line x1="610" y1="368" x2="660" y2="368" stroke="#cf222e" stroke-width="4"/>
+  <text x="675" y="374" font-size="16">GPU/RAPIDS cuDF</text>
 </svg>
